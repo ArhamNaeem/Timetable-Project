@@ -1,11 +1,12 @@
 from reactpy import component, html, run, use_state, use_effect
 from timetable_generation import class_timetable as ct, teacher_timetable as tt
 @component
-def Class_Timetable():
+def Class_Timetable(semester):
+     semester = int(semester)
      headers = list(ct[0].keys())
      th_elements = []
      tr_elements = []
-     current_semester = None
+    #  current_semester = None
      for header in headers:
         if header!= 'semester':
          th_elements.append(html.th(header))
@@ -13,28 +14,26 @@ def Class_Timetable():
          tr_elements.append([])
          td_elements = []
          table_caption = []
-         for key,value in ct[i].items():
-          if(key != 'semester'):  
-             if(current_semester != ct[i]['semester']):
-               current_semester = ct[i]['semester']
-               table_caption = html.caption(html.h1(f'Timetable for Semester {current_semester}'))
-               tr_elements[i].append(html.tr(table_caption))
-               tr_elements[i].append(html.tr(*th_elements))
-             td_elements.append(html.td(value))
-         tr_elements[i].append(html.tr(td_elements))
-  
+        #  print(ct[i]['semester'],semester,type(ct[i]['semester']),type(semester))
+         if ct[i]['semester'] == semester:
+          # print('here')
+          for key,value in ct[i].items():
+            if(key != 'semester'):  
+                # tr_elements[i].append(html.tr(*th_elements))
+                td_elements.append(html.td(value))
+          tr_elements[i].append(html.tr(td_elements))
+    #  print(tr_elements)
      return html.table(
             {"border":"1"},
-            #  *table_captions
-            #   html.tr(th_elements),
+             html.caption(html.h1(f'Timetable for semester {semester}')),
+              html.tr(th_elements),
               *tr_elements
            )  
 @component
-def Teacher_Timetable():
+def Teacher_Timetable(_teacher):
      headers = list(tt[0].keys())
      th_elements = []
      tr_elements = []
-     current_teacher = None
      for header in headers:
         if header!= 'teacherName':
          th_elements.append(html.th(header))
@@ -42,20 +41,23 @@ def Teacher_Timetable():
          tr_elements.append([])
          td_elements = []
          table_caption = []
-         for key,value in tt[i].items():
-          if(key != 'teacherName'):  
-             if(current_teacher != ct[i]['teacher']):
-               current_teacher = ct[i]['teacher']
-               table_caption = html.caption(html.h1(f'Timetable for {current_teacher}'))
-               tr_elements[i].append(html.tr(table_caption))
-               tr_elements[i].append(html.tr(*th_elements))
-             td_elements.append(html.td(value))
-         tr_elements[i].append(html.tr(td_elements))
-  
+        #  print(_teacher,tt[i]['teacherName'])
+         if tt[i]['teacherName'] == _teacher:
+          for key,value in tt[i].items():
+            #  print(key)
+             if(key != 'teacherName'):  
+                #  tr_elements[i].append(html.tr(*th_elements))
+                td_elements.append(html.td(value))
+          tr_elements[i].append(html.tr(td_elements))
+    #  print(td_elements)
+     if(len(td_elements) ==0):return html.h1(
+       'You have not been given any course to teach'
+     )
      return html.table(
             {"border":"1"},
             #  *table_captions
-            #   html.tr(th_elements),
+            html.caption(html.h1(f'Timetable for {_teacher}')),
+              html.tr(th_elements),
               *tr_elements
            )
 
@@ -63,22 +65,36 @@ def Teacher_Timetable():
 @component
 def GetTimetable(query):
   if query:
-   print(query)          
-   return html.h1('hi')
+    # print(query['position'],query['value'])
+    if query['position']=='Student':           
+      return html.div(
+        Class_Timetable(query['value'])
+      )
+    if query['position'] == 'Teacher':
+      return html.div(
+        Teacher_Timetable(query['value'])
+      )
 
 @component
 def ShowTimeTable(state):
   val, set_val = use_state("")
   query , set_query = use_state("")
   def handleClick(event):
+    print(event['currentTarget']['value'],val)
+    if event['currentTarget']['value'] == 'Teacher':
+     set_query({'position':event['currentTarget']['value'],'value':val})
+     return 
+      
     if event['currentTarget']['value'] == 'Student' and int(val) <=0 or int(val)>8:
       print('Invalid semester!')
       set_val("")
       return
-    set_query({'position':event['currentTarget']['value'],'value':val})
+    else:
+     set_query({'position':event['currentTarget']['value'],'value':val})
+     return 
    
   def handleChange(event):
-    set_val(val + event['currentTarget']['value'])
+    set_val(event['currentTarget']['value'])
   if state:
     input = None
     if state == 'Student':
@@ -86,8 +102,9 @@ def ShowTimeTable(state):
       html.button({'on_click':handleClick,"value":"Student"},'Check timetable'),
         GetTimetable(query)
      )
+    if state == 'Teacher':
      
-    return html.div (html.input({'placeholder':"Enter your name",'on_change':handleChange}),
+      return html.div (html.input({'placeholder':"Enter your name",'on_change':handleChange}),
       html.button({'on_click':handleClick,"value":'Teacher'},'Check timetable'),
       GetTimetable(query)
       )
