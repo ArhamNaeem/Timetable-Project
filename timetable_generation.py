@@ -163,6 +163,7 @@ semester_subjects = [["OOP","Programming Fundamentals","English","ICT","History"
 
 
 teachers = ["Mr. Smith", "Ms. Johnson", "Mr. Brown", "Ms. Davis", "Mr. Wilson", "Mrs. Anderson", "Mr. Thompson", "Ms. Roberts", "Mr. Clark", "Mrs. Moore"]
+max_lectures_per_day = 4
 
 teacherSubjectsTaught = {
     'Mr. Smith' : ['COAL','OOP'],
@@ -182,5 +183,5 @@ days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 time_slots = ["9:00 AM - 10:00 AM", "10:00 AM - 11:00 AM", "11:00 AM - 12:00 PM", "1:00 PM - 2:00 PM", "2:00 PM - 3:00 PM"]
 timetable_generator = TimetableGenerator(semester_subjects, teachers, max_lectures_per_day, teacherSubjectsTaught, rooms, days, time_slots)
 class_timetable, teacher_timetable = timetable_generator.generate_timetable()
-timetable_generator.print_semesterwise_timetable(class_timetable)
-timetable_generator.print_teacher_timetable(teacher_timetable)
+# timetable_generator.print_semesterwise_timetable(class_timetable)
+# timetable_generator.print_teacher_timetable(teacher_timetable)
