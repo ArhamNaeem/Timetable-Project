@@ -41,7 +41,7 @@ def Teacher_Timetable(_teacher):
          tr_elements.append([])
          td_elements = []
          table_caption = []
-        #  print(_teacher,tt[i]['teacherName'])
+         print(_teacher,tt[i]['teacherName'])
          if tt[i]['teacherName'] == _teacher:
           for key,value in tt[i].items():
             #  print(key)
@@ -49,11 +49,8 @@ def Teacher_Timetable(_teacher):
                 #  tr_elements[i].append(html.tr(*th_elements))
                 td_elements.append(html.td(value))
           tr_elements[i].append(html.tr(td_elements))
-     print(tr_elements)
-    #  if(len(td_elements) ==0):
-    #    return html.h1(
-    #    'You have not been given any course to teach'
-    #  )
+   
+    
      return html.table(
             {"border":"1"},
             #  *table_captions
