@@ -1,7 +1,19 @@
 from reactpy import component, html, run, use_state, use_effect
 from timetable_generation import class_timetable as ct, teacher_timetable as tt
+from timetable_generation import teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots
+from timetable_generation import TimetableGenerator
+import pandas as pd
+
+class_tt = ct
+teacher_tt = tt
+
+subjects=pd.read_csv("subjects.csv")
+subjects = [subject.split(',') for subject in subjects['subject']]
+
+        
 @component
 def Class_Timetable(semester):
+     global class_tt
      semester = int(semester)
      headers = list(ct[0].keys())
      th_elements = []
@@ -10,14 +22,13 @@ def Class_Timetable(semester):
      for header in headers:
         if header!= 'semester':
          th_elements.append(html.th(header))
-     for i in range(len(ct)):
+     for i in range(len(class_tt)):
          tr_elements.append([])
          td_elements = []
          table_caption = []
-        #  print(ct[i]['semester'],semester,type(ct[i]['semester']),type(semester))
-         if ct[i]['semester'] == semester:
+         if class_tt[i]['semester'] == semester:
           # print('here')
-          for key,value in ct[i].items():
+          for key,value in class_tt[i].items():
             if(key != 'semester'):  
                 # tr_elements[i].append(html.tr(*th_elements))
                 td_elements.append(html.td(value))
@@ -31,19 +42,20 @@ def Class_Timetable(semester):
            )  
 @component
 def Teacher_Timetable(_teacher):
+     global teacher_tt
      headers = list(tt[0].keys())
      th_elements = []
      tr_elements = []
      for header in headers:
         if header!= 'teacherName':
          th_elements.append(html.th(header))
-     for i in range(len(tt)):
+     for i in range(len(teacher_tt)):
          tr_elements.append([])
          td_elements = []
          table_caption = []
-         print(_teacher,tt[i]['teacherName'])
-         if tt[i]['teacherName'] == _teacher:
-          for key,value in tt[i].items():
+         print(_teacher,teacher_tt[i]['teacherName'])
+         if teacher_tt[i]['teacherName'] == _teacher:
+          for key,value in teacher_tt[i].items():
             #  print(key)
              if(key != 'teacherName'):  
                 #  tr_elements[i].append(html.tr(*th_elements))
@@ -59,6 +71,55 @@ def Teacher_Timetable(_teacher):
               *tr_elements
            )
 
+@component
+def GenerateNewTimetable(state):
+  if state:
+    global class_tt
+    global teacher_tt_tt
+    global subjects
+    new_subjects=pd.read_csv("subjects.csv")
+    new_subjects = [subject.split(',') for subject in new_subjects['subject']]
+    subjects=new_subjects
+    # print(new_subjects)
+    timetable = TimetableGenerator(subjects,teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots)
+    print('new timetable generated')
+    print(class_tt)
+    
+    ct,tt= timetable.generate_timetable()
+    class_tt = ct
+    teacher_tt = tt
+    print(class_tt)
+    
+    
+  
+@component
+def FileUploadComponent():
+     state ,set_state= use_state(False)
+     def handleClick(event):
+      #  print('here')
+       set_state(True)
+     return html.div(
+       html.h1('Requirements for uploading file'),
+       html.ul(
+         html.li('Upload csv file only'),
+         html.li('File must be named students.csv'),
+         html.li(
+           "File must have",
+           html.ul(
+             html.li('2 columns'),
+             html.li('Column 1 must be semester_id, specifying semester number'),
+             html.li('Column 2 must be subject, specifying subjects to be taught in this semester')
+           )
+         )
+       ),
+        html.form(
+            {'action': ' http://127.0.0.1:5000/upload', 'method': 'POST', 'enctype': 'multipart/form-data'},
+            html.input({'type': 'file', 'name': 'file'}),
+            html.button({'type': 'submit','on_click':handleClick}, 'Generate Timetable')
+        ),
+        GenerateNewTimetable(state)
+    )  
+
 
 @component
 def GetTimetable(query):
@@ -70,6 +131,7 @@ def GetTimetable(query):
       )
     if query['position'] == 'Teacher':
       return html.div(
+       
         Teacher_Timetable(query['value'])
       )
 
@@ -77,6 +139,10 @@ def GetTimetable(query):
 def ShowTimeTable(state):
   val, set_val = use_state("")
   query , set_query = use_state("")
+  
+  def handleFile(event):
+    print(event)
+  
   def handleClick(event):
     print(event['currentTarget']['value'],val)
     if event['currentTarget']['value'] == 'Teacher':
@@ -106,10 +172,16 @@ def ShowTimeTable(state):
       html.button({'on_click':handleClick,"value":'Teacher'},'Check timetable'),
       GetTimetable(query)
       )
+    if state == 'GenerateTT':
+      return html.div(
+      FileUploadComponent()
+        
+      )
+      set_upload_file(True)
  
     
       
-       
+     
 
 @component
 def UserInteraction():
@@ -119,15 +191,17 @@ def UserInteraction():
   htmlButtons=None
   if not state:
     htmlButtons = [html.button({"on_click":handleSubmit,'value':'Student'},'Are you a student'), 
-   html.button({"on_click":handleSubmit, "value":'Teacher'},'Are you a teacher') ]
+   html.button({"on_click":handleSubmit, "value":'Teacher'},'Are you a teacher') ,
+   html.button({"on_click":handleSubmit, "value":'GenerateTT'},'Generate new timetable') 
+   
+   ]
   if state: 
     htmlButtons = ""
   return html.div(
     *htmlButtons,
-  ShowTimeTable(state) 
-  
- 
+  ShowTimeTable(state) ,
   )
+  
   
 @component
 def App():

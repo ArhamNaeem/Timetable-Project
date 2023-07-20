@@ -1,26 +1,34 @@
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from io import BytesIO
+from reactpy import Component, html
 
-def create_pdf_from_variable(value):
-    buffer = BytesIO()  # Create an in-memory buffer to store the PDF content
-    c = canvas.Canvas(buffer, pagesize=letter)
+class FileUploadComponent(Component):
+    def __init__(self):
+        super().__init__()
+        self.state = {
+            'fileContent': None
+        }
 
-    # Add the text from the variable to the PDF
-    c.drawString(100, 700, value)
+    def handle_file_upload(self, event):
+        file = event.target.files[0]
+        reader = FileReader()
 
-    c.save()  # Save the canvas content to the buffer
-    buffer.seek(0)  # Move the buffer's pointer to the beginning
+        reader.onload = lambda e: self.handle_file_loaded(e)
 
-    return buffer
+        reader.readAsText(file)
 
-if __name__ == "__main__":
-    a = "hey its me"  # Replace this with your desired value
+    def handle_file_loaded(self, event):
+        file_content = event.target.result
+        # Perform any necessary checks or parsing on the file_content here.
+        # For example, you can use regular expressions or specific logic to validate or process the content.
+        # You can also use libraries like pandas for more complex data processing.
 
-    pdf_buffer = create_pdf_from_variable(a)
+        # Update the state with the file content.
+        self.set_state({'fileContent': file_content})
 
-    # Save the PDF content to a file and download it
-    with open("output.pdf", "wb") as f:
-        f.write(pdf_buffer.read())
+    def render(self):
+        return html.div(
+            html.input(type='file', onChange=self.handle_file_upload),
+            html.pre(self.state['fileContent'] if self.state['fileContent'] else 'No file content available.')
+        )
 
-    print("PDF created and downloaded successfully.")
+if __name__ == '__main__':
+    FileUploadComponent().render_to_file('index.html')
