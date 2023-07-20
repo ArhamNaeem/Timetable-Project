@@ -49,10 +49,11 @@ def Teacher_Timetable(_teacher):
                 #  tr_elements[i].append(html.tr(*th_elements))
                 td_elements.append(html.td(value))
           tr_elements[i].append(html.tr(td_elements))
-    #  print(td_elements)
-     if(len(td_elements) ==0):return html.h1(
-       'You have not been given any course to teach'
-     )
+     print(tr_elements)
+    #  if(len(td_elements) ==0):
+    #    return html.h1(
+    #    'You have not been given any course to teach'
+    #  )
      return html.table(
             {"border":"1"},
             #  *table_captions
