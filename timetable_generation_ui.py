@@ -82,13 +82,13 @@ def GenerateNewTimetable(state):
     subjects=new_subjects
     # print(new_subjects)
     timetable = TimetableGenerator(subjects,teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots)
-    print('new timetable generated')
-    print(class_tt)
+    # print('new timetable generated')
+    # print(class_tt)
     
     ct,tt= timetable.generate_timetable()
     class_tt = ct
     teacher_tt = tt
-    print(class_tt)
+    # print(class_tt)
     
     
   
@@ -96,13 +96,12 @@ def GenerateNewTimetable(state):
 def FileUploadComponent():
      state ,set_state= use_state(False)
      def handleClick(event):
-      #  print('here')
        set_state(True)
      return html.div(
        html.h1('Requirements for uploading file'),
        html.ul(
          html.li('Upload csv file only'),
-         html.li('File must be named students.csv'),
+         html.li('File must be named subjects.csv'),
          html.li(
            "File must have",
            html.ul(
@@ -113,12 +112,43 @@ def FileUploadComponent():
          )
        ),
         html.form(
-            {'action': ' http://127.0.0.1:5000/upload', 'method': 'POST', 'enctype': 'multipart/form-data'},
+            {'action': ' http://127.0.0.1:5000/upload-timetable', 'method': 'POST', 'enctype': 'multipart/form-data'},
             html.input({'type': 'file', 'name': 'file'}),
             html.button({'type': 'submit','on_click':handleClick}, 'Generate Timetable')
         ),
         GenerateNewTimetable(state)
     )  
+     
+     
+     
+@component
+def AttendanceUploadComponent():
+     state ,set_state= use_state(False)
+     def handleClick(event):
+       set_state(True)
+     return html.div(
+       html.h1('Requirements for uploading file'),
+       html.ul(
+         html.li('Upload csv file only'),
+         html.li('File must be named attendance.csv'),
+         html.li(
+           "File must have",
+           html.ul(
+             html.li('3 columns'),
+             html.li("Column 1 must be teacher_id, specifying teacher's unique id"),
+             html.li("Column 2 must be teacher_name, specifying teacher's name"),
+             html.li('Column 3 must be attendance_status, specifying their presence')
+           )
+         )
+       ),
+        html.form(
+            {'action': ' http://127.0.0.1:5000/upload-attendance', 'method': 'POST', 'enctype': 'multipart/form-data'},
+            html.input({'type': 'file', 'name': 'file'}),
+            html.button({'type': 'submit','on_click':handleClick}, 'Add attendance')
+        ),
+        # GenerateNewTimetable(state)
+    )  
+
 
 
 @component
@@ -134,14 +164,80 @@ def GetTimetable(query):
        
         Teacher_Timetable(query['value'])
       )
+      
+@component
+def ShowAllocation(show_allocation,state):
+  if show_allocation:
+    print(state)
+    return html.div(
+      state
+    )
+      
+@component 
+def AllocateRoom(available_rooms,timetable):
+  name,set_name = use_state(None)
+  semester,set_semester = use_state(None)
+  course,set_course = use_state(None)
+  day,set_day = use_state(None)
+  state , set_state= use_state(None)
+  show_allocation,set_show_allocation = use_state(True)
+  # def changeName(event):
+    # set_name(event['currentTarget']['value'])
+  def changeSemester(event):
+    set_semester(event['currentTarget']['value'])
+  def changeCourse(event):
+    set_course(event['currentTarget']['value'])
+  def changeDay(event):
+    set_day(event['currentTarget']['value'])
+    
+    
+  def handleSubmit(event):
+    ret= timetable.allocate_room(day)
+    if ret:
+      set_state(ret)
+      set_show_allocation(True)
+    # print(time,day)
+  return html.div(
+    # html.input({'placeholder':'Enter your name','on_change':changeName}),
+    html.input({'placeholder':'Enter semester','on_change':changeSemester}),
+    html.input({'placeholder':'Enter course name','on_change':changeCourse}),
+    html.input({'placeholder':'Enter day of extra class','on_change':changeDay}),
+    html.button({'on_click':handleSubmit},'Allocate Room'),
+    ShowAllocation(show_allocation,state)
+  )      
+@component
+def ExtraClassComponent():
+
+    global subjects
+    tr_elements = []
+    new_subjects=pd.read_csv("subjects.csv")
+    new_subjects = [subject.split(',') for subject in new_subjects['subject']]
+    subjects=new_subjects
+    timetable = TimetableGenerator(subjects,teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots)    
+    timetable.generate_timetable()
+    available_rooms = timetable.show_available_rooms_timeslots()
+    tr_elements=[]
+    for available_room in available_rooms:
+        tr_elements.append(html.tr(html.td(available_room['day']),html.td(available_room['room']),html.td(available_room['timeslot'])))
+    return html.div(
+      AllocateRoom(available_rooms,timetable),
+      html.h1('Available rooms'),
+    html.table(
+      {"border":"1"},
+     html.tr([html.th('Day'), html.th('Room'), html.th('Timeslot')]),
+     *tr_elements
+  
+  )
+    )
+  
 
 @component
 def ShowTimeTable(state):
   val, set_val = use_state("")
   query , set_query = use_state("")
   
-  def handleFile(event):
-    print(event)
+  # def handleFile(event):
+    # print(event)
   
   def handleClick(event):
     print(event['currentTarget']['value'],val)
@@ -174,10 +270,17 @@ def ShowTimeTable(state):
       )
     if state == 'GenerateTT':
       return html.div(
-      FileUploadComponent()
-        
+      FileUploadComponent() 
       )
-      set_upload_file(True)
+    if state == 'AddAttendance':
+        return html.div(
+          AttendanceUploadComponent()
+        )
+    if state == 'AddExtraClass':
+      return html.div(
+        ExtraClassComponent()
+        
+        )
  
     
       
@@ -192,7 +295,9 @@ def UserInteraction():
   if not state:
     htmlButtons = [html.button({"on_click":handleSubmit,'value':'Student'},'Are you a student'), 
    html.button({"on_click":handleSubmit, "value":'Teacher'},'Are you a teacher') ,
-   html.button({"on_click":handleSubmit, "value":'GenerateTT'},'Generate new timetable') 
+   html.button({"on_click":handleSubmit, "value":'GenerateTT'},'Generate new timetable') ,
+   html.button({"on_click":handleSubmit, "value":'AddAttendance'},"Add teacher's attendance record") ,
+   html.button({"on_click":handleSubmit, "value":'AddExtraClass'},"Add extra class") 
    
    ]
   if state: 
@@ -206,9 +311,7 @@ def UserInteraction():
 @component
 def App():
   return html.div(
-    UserInteraction(),
-    # Class_Timetable(),
-    # Teacher_Timetable()
+    UserInteraction()
   )
 
 

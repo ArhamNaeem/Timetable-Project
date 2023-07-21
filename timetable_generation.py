@@ -141,7 +141,31 @@ class TimetableGenerator:
                 tries-=1
 
         return ct,tt
-
+    
+    def allocate_room(self,day):
+        for room in self.rooms:
+            for timeslot in self.time_slots:
+                if(not self.is_room_full[room][day][timeslot]):
+                    details = {}
+                    self.is_room_full[room][day][timeslot] = True
+                    details['room']=room
+                    details['day']=day
+                    details['timeslot']=timeslot
+                    return details
+        return None
+    def show_available_rooms_timeslots(self):
+        free_room=[]
+        for day in self.days:
+            for room in self.rooms:
+                for timeslot in self.time_slots:
+                    if(not self.is_room_full[room][day][timeslot]):
+                        _temp = {}
+                        _temp['room']=room
+                        _temp['day']=day
+                        _temp['timeslot']=timeslot
+                        free_room.append(_temp)
+        return free_room        
+                        
     def print_semesterwise_timetable(self,timetable):
 
         print("--------Semester-Wise Timetable-------")
@@ -346,7 +370,7 @@ teacherSubjectsTaught = {
 
     'Mr. Brown': ['English','Chemistry'],
 
-    'Ms. Davis':['Histroy','COAL'],
+    'Ms. Davis':['History','COAL'],
 
     'Mr. Wilson':['OOP','Programming Fundamentals'],
 
@@ -356,7 +380,7 @@ teacherSubjectsTaught = {
 
     'Ms. Roberts': ['Programming Fundamentals','English'],
 
-    'Mr. Clark': ['Chemistry','Histroy'],
+    'Mr. Clark': ['Chemistry','History'],
 
     'Mrs. Moore':['Science', 'DCN']
 
