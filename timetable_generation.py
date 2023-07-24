@@ -90,7 +90,7 @@ class TimetableGenerator:
 
                 random_time_slot = self.time_slots[random.randint(0,len(self.time_slots)-1)]
 
-                while(subject not in subject_taught and not self.is_room_full[random_room][day][random_time_slot] and self.is_teacher_available[teacher][random_room][day][random_time_slot] and self.is_class_available[semester][day][random_time_slot]):
+                while(subject not in subject_taught and  self.is_room_full[random_room][day][random_time_slot] == False and self.is_teacher_available[teacher][random_room][day][random_time_slot] and self.is_class_available[semester][day][random_time_slot]):
 
                         self.is_room_full[random_room][day][random_time_slot] = True
 
@@ -116,8 +116,9 @@ class TimetableGenerator:
 
                             "time_slot":random_time_slot,
 
-                            "semester":semester
-
+                            "semester":semester,
+                            
+                            "extra class": False
                         })
 
                         ct.append({
@@ -141,13 +142,34 @@ class TimetableGenerator:
                 tries-=1
 
         return ct,tt
-    
-    def allocate_room(self,day):
+    # -------------------- ROOMS ARE NOT BEING ALLOCATED AFTER ROOM 1---------
+    def allocate_room(self,day,teacher,semester,subject,teacher_tt):
+        semester = int(semester)
         for room in self.rooms:
             for timeslot in self.time_slots:
-                if(not self.is_room_full[room][day][timeslot]):
+                # print(self.is_room_full[room][day][timeslot])
+                # print(self.is_class_available[semester][day][timeslot], timeslot,semester)
+                if(self.is_room_full[room][day][timeslot]==False and self.is_teacher_available[teacher][room][day][timeslot] and self.is_class_available[semester][day][timeslot]):
                     details = {}
                     self.is_room_full[room][day][timeslot] = True
+                    self.is_teacher_available[teacher][room][day][timeslot] = False
+                    self.is_class_available[semester][day][timeslot]=False
+                    teacher_tt.append({
+
+                            "teacherName":teacher,
+
+                            "subject":subject,
+
+                            "day":day,
+
+                            "room":room,
+
+                            "time_slot":timeslot,
+
+                            "semester":semester,
+                            
+                            "extra class": True
+                        })
                     details['room']=room
                     details['day']=day
                     details['timeslot']=timeslot
@@ -158,12 +180,15 @@ class TimetableGenerator:
         for day in self.days:
             for room in self.rooms:
                 for timeslot in self.time_slots:
-                    if(not self.is_room_full[room][day][timeslot]):
+                    # print(room,timeslot,day,self.is_room_full[room][day][timeslot],end="")
+                    if(self.is_room_full[room][day][timeslot]==False):
+                        # print('added',end="")
                         _temp = {}
                         _temp['room']=room
                         _temp['day']=day
                         _temp['timeslot']=timeslot
                         free_room.append(_temp)
+                    # print()
         return free_room        
                         
     def print_semesterwise_timetable(self,timetable):
@@ -396,6 +421,6 @@ timetable_generator = TimetableGenerator(subjects, teachers, max_lectures_per_da
 
 class_timetable, teacher_timetable = timetable_generator.generate_timetable()
 
-timetable_generator.print_semesterwise_timetable(class_timetable)
-
-timetable_generator.print_teacher_timetable(teacher_timetable) 
+# ti/metable_generator.print_semesterwise_timetable(class_timetable)
+# 
+# timetable_generator.print_teacher_timetable(teacher_timetable) 

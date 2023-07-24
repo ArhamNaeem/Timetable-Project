@@ -1,11 +1,15 @@
 from reactpy import component, html, run, use_state, use_effect
 from timetable_generation import class_timetable as ct, teacher_timetable as tt
-from timetable_generation import teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots
+from timetable_generation import teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots, timetable_generator
 from timetable_generation import TimetableGenerator
 import pandas as pd
-
+tt_generator = timetable_generator
 class_tt = ct
 teacher_tt = tt
+
+# TODO 1: MAKE ROOMS BE SELECTED FROM 1-END NOT JUST 1
+# TODO 2: ALLOW AUTO FIXTURE, IF TEACHER IS ABSENT ANOTHER TEACHER SHALL BE ALLOCATED
+
 
 subjects=pd.read_csv("subjects.csv")
 subjects = [subject.split(',') for subject in subjects['subject']]
@@ -77,15 +81,16 @@ def GenerateNewTimetable(state):
     global class_tt
     global teacher_tt_tt
     global subjects
+    global tt_generator
     new_subjects=pd.read_csv("subjects.csv")
     new_subjects = [subject.split(',') for subject in new_subjects['subject']]
     subjects=new_subjects
     # print(new_subjects)
-    timetable = TimetableGenerator(subjects,teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots)
+    tt_generator = TimetableGenerator(subjects,teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots)
     # print('new timetable generated')
     # print(class_tt)
     
-    ct,tt= timetable.generate_timetable()
+    ct,tt= tt_generator.generate_timetable()
     class_tt = ct
     teacher_tt = tt
     # print(class_tt)
@@ -166,12 +171,17 @@ def GetTimetable(query):
       )
       
 @component
-def ShowAllocation(show_allocation,state):
+def ShowAllocation(show_allocation,state,semester,course):
   if show_allocation:
-    print(state)
+    # print(show_allocation)
     return html.div(
-      state
+      f"{state['room']} has been assigned to semester {semester} for {course} class on {state['day']} at time {state['timeslot']}"
     )
+    
+      
+    
+    
+    
       
 @component 
 def AllocateRoom(available_rooms,timetable):
@@ -180,9 +190,9 @@ def AllocateRoom(available_rooms,timetable):
   course,set_course = use_state(None)
   day,set_day = use_state(None)
   state , set_state= use_state(None)
-  show_allocation,set_show_allocation = use_state(True)
-  # def changeName(event):
-    # set_name(event['currentTarget']['value'])
+  show_allocation,set_show_allocation = use_state(False)
+  def changeName(event):
+    set_name(event['currentTarget']['value'])
   def changeSemester(event):
     set_semester(event['currentTarget']['value'])
   def changeCourse(event):
@@ -192,35 +202,40 @@ def AllocateRoom(available_rooms,timetable):
     
     
   def handleSubmit(event):
-    ret= timetable.allocate_room(day)
+    global teacher_tt
+    ret= timetable.allocate_room(day,name,semester,course,teacher_tt)
+    # print(ret)
     if ret:
-      set_state(ret)
-      set_show_allocation(True)
-    # print(time,day)
+     set_state(ret)
+     set_show_allocation(True)
+    if  not ret:
+      set_show_allocation(False)
+    
   return html.div(
-    # html.input({'placeholder':'Enter your name','on_change':changeName}),
+    html.input({'placeholder':'Enter teacher name','on_change':changeName}),
     html.input({'placeholder':'Enter semester','on_change':changeSemester}),
     html.input({'placeholder':'Enter course name','on_change':changeCourse}),
     html.input({'placeholder':'Enter day of extra class','on_change':changeDay}),
     html.button({'on_click':handleSubmit},'Allocate Room'),
-    ShowAllocation(show_allocation,state)
-  )      
+    ShowAllocation(show_allocation,state,semester,course)
+  )  
+  
+  
+      
 @component
 def ExtraClassComponent():
-
+    global tt_generator
     global subjects
     tr_elements = []
     new_subjects=pd.read_csv("subjects.csv")
     new_subjects = [subject.split(',') for subject in new_subjects['subject']]
     subjects=new_subjects
-    timetable = TimetableGenerator(subjects,teachers,max_lectures_per_day,teacherSubjectsTaught,rooms,days,time_slots)    
-    timetable.generate_timetable()
-    available_rooms = timetable.show_available_rooms_timeslots()
+    available_rooms = tt_generator.show_available_rooms_timeslots()
     tr_elements=[]
     for available_room in available_rooms:
         tr_elements.append(html.tr(html.td(available_room['day']),html.td(available_room['room']),html.td(available_room['timeslot'])))
     return html.div(
-      AllocateRoom(available_rooms,timetable),
+      AllocateRoom(available_rooms,tt_generator),
       html.h1('Available rooms'),
     html.table(
       {"border":"1"},
@@ -282,9 +297,7 @@ def ShowTimeTable(state):
         
         )
  
-    
-      
-     
+       
 
 @component
 def UserInteraction():
