@@ -1,11 +1,11 @@
 teacher_id,teacher_name,teacher_status
-1, Mr. Smith,A
-2 ,Mr. Brown,P 
-3 ,Ms. Johnson,A
-4 ,Ms. Davis,P
-5 ,Mr. Wilson,P
-6 ,Mrs. Anderson,P
-7 ,Mr. Thompson,P
-8 ,Ms. Roberts,P
-9 ,Mr. Clark, P
-10 ,Mrs. Moore,P
+1,Mr. Smith,A
+2,Mr. Brown,A
+3,Ms. Johnson,A
+4,Ms. Davis,P
+5,Mr. Wilson,P
+6,Mrs. Anderson,A
+7,Mr. Thompson,P
+8,Ms. Roberts,P
+9,Mr. Clark,P
+10,Mrs. Moore,P

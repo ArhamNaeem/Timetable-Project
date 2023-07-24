@@ -2,6 +2,8 @@ import random
 
 from tabulate import tabulate
 
+import datetime
+
 import pandas as pd
 
 subjects=pd.read_csv("subjects.csv")
@@ -32,10 +34,10 @@ class TimetableGenerator:
         self.semester_number = 1
 
        
+        self.teacher_subjects_taught = {}
+        # self.teacher_timetable = {}
 
-        self.teacher_timetable = {}
-
-        self.student_timetable = {}
+        # self.student_timetable = {}
 
         self.is_room_full = {}
 
@@ -91,16 +93,17 @@ class TimetableGenerator:
                 random_time_slot = self.time_slots[random.randint(0,len(self.time_slots)-1)]
 
                 while(subject not in subject_taught and  self.is_room_full[random_room][day][random_time_slot] == False and self.is_teacher_available[teacher][random_room][day][random_time_slot] and self.is_class_available[semester][day][random_time_slot]):
-
+                        self.teacher_subjects_taught[teacher].add((subject,semester,random_room,random_time_slot,day))
+                 
                         self.is_room_full[random_room][day][random_time_slot] = True
 
                         self.is_teacher_available[teacher][random_room][day][random_time_slot] = False
 
-                        self.teacher_timetable[teacher][day][random_room][random_time_slot]= subject
+                        # self.teacher_timetable[teacher][day][random_room][random_time_slot]= subject
 
                         self.is_class_available[semester][day][random_time_slot]=False
 
-                        self.student_timetable[random_room][day][random_time_slot] =({teacher,subject})
+                        # self.student_timetable[random_room][day][random_time_slot] =({teacher,subject})
 
                         subject_taught.append(subject)
 
@@ -140,7 +143,7 @@ class TimetableGenerator:
                        
 
                 tries-=1
-
+        # print('here',self.teacher_subjects_taught)
         return ct,tt
     # -------------------- ROOMS ARE NOT BEING ALLOCATED AFTER ROOM 1---------
     def allocate_room(self,day,teacher,semester,subject,teacher_tt):
@@ -175,6 +178,8 @@ class TimetableGenerator:
                     details['timeslot']=timeslot
                     return details
         return None
+    
+    
     def show_available_rooms_timeslots(self):
         free_room=[]
         for day in self.days:
@@ -190,7 +195,67 @@ class TimetableGenerator:
                         free_room.append(_temp)
                     # print()
         return free_room        
-                        
+    
+    
+    def substitution(self,tt):
+        teachers = pd.read_csv('attendance.csv')
+        today = datetime.date.today()
+        day = today.weekday()
+        selected_teachers = []
+        attendance = {}
+        for index,row in teachers.iterrows():
+            attendance[row['teacher_name']]=row['teacher_status']
+        for index,row in teachers.iterrows():
+          todays_subjects = []
+        #   print(row['teacher_id'],row['teacher_name'],row['teacher_status'],self.teacher_subjects_taught[row['teacher_name']])
+          if len(self.teacher_subjects_taught[row['teacher_name']]) and row['teacher_status']=='A':
+            # print(row['teacher_name'] , self.teacher_subjects_taught[row['teacher_name']])
+            
+            #getting subjects to be taught on the day of absence
+            for items in self.teacher_subjects_taught[row['teacher_name']]:
+                if(items[-1]==self.days[day]):
+                    todays_subjects.append(items)
+            # print(items)       
+            #getting the present teachers who teaches that subject
+            for absent_teacher_subject in todays_subjects:
+              available_present_teachers = []
+              for teacher in self.teacherSubjectsTaught:
+               if attendance[teacher] == 'P'  and self.is_teacher_available[teacher][items[2]][items[-1]][items[-2]]:
+                for available_teacher_subject in self.teacherSubjectsTaught[teacher]:
+                       if available_teacher_subject == absent_teacher_subject[0]:
+                           available_present_teachers.append(teacher)
+              if not len(available_present_teachers):
+                  print(f'Nobody present available for {absent_teacher_subject[0]} at {absent_teacher_subject[3]}')
+                  return
+              selected_random_teacher = available_present_teachers[random.randint(0,len(available_present_teachers)-1)]
+            #   selected_random_teacher = available_present_teachers[0]
+              
+              print(todays_subjects[0],selected_random_teacher)
+              self.is_teacher_available[selected_random_teacher][items[2]][items[-1]][items[-2]] = False
+            #   print(selected_random_teacher)
+              selected_teachers.append([selected_random_teacher,todays_subjects[0][0],row['teacher_name']])
+              tt.append({
+
+                            "teacherName":selected_random_teacher,
+
+                            "subject":todays_subjects[0][0],
+
+                            "day":todays_subjects[0][-1],
+
+                            "room":todays_subjects[0][2],
+
+                            "time_slot":todays_subjects[0][-2],
+
+                            "semester":todays_subjects[0][1],
+                            
+                            "extra class": False
+                      })
+        print(selected_teachers)
+
+        return selected_teachers
+    
+    
+    
     def print_semesterwise_timetable(self,timetable):
 
         print("--------Semester-Wise Timetable-------")
@@ -276,7 +341,10 @@ class TimetableGenerator:
            
 
     def _initialize_timetables(self):
-
+        
+        for teacher in self.teachers:
+            self.teacher_subjects_taught[teacher] = set()
+        
     #every room is initially empty
 
         for room in self.rooms:
@@ -325,21 +393,21 @@ class TimetableGenerator:
 
     #initalize timetable for teacher          
 
-        for teacher in self.teachers:
+        # for teacher in self.teachers:
 
-            self.teacher_timetable[teacher] = {}
+        #     self.teacher_timetable[teacher] = {}
 
-            for day in self.days:
+        #     for day in self.days:
 
-              self.teacher_timetable[teacher][day] = {}
+        #       self.teacher_timetable[teacher][day] = {}
 
-              for room in self.rooms:
+        #       for room in self.rooms:
 
-                 self.teacher_timetable[teacher][day][room] = {}
+        #          self.teacher_timetable[teacher][day][room] = {}
 
-                 for time_slot in self.time_slots:
+        #          for time_slot in self.time_slots:
 
-                    self.teacher_timetable[teacher][day][room][time_slot]   = []
+                    # self.teacher_timetable[teacher][day][room][time_slot]   = []
 
                    
 
@@ -349,21 +417,21 @@ class TimetableGenerator:
 
    
 
-        for room in self.rooms:
+        # for room in self.rooms:
 
-            self.student_timetable[room] = {}
+        #     self.student_timetable[room] = {}
 
            
 
-            for day in self.days:
+        #     for day in self.days:
 
-                self.student_timetable[room][day] = {}
+        #         self.student_timetable[room][day] = {}
 
                
 
-                for time_slot in self.time_slots:
+        #         for time_slot in self.time_slots:
 
-                    self.student_timetable[room][day][time_slot]   = None
+        #             self.student_timetable[room][day][time_slot]   = None
 
                    
 
@@ -391,21 +459,21 @@ teacherSubjectsTaught = {
 
     'Mr. Smith' : ['OOP','DCN'],
 
-    'Ms. Johnson': ['Programming Fundamentals','ICT'],
+    'Ms. Johnson': ['Programming Fundamentals','ICT','COAL'],
 
-    'Mr. Brown': ['English','Chemistry'],
+    'Mr. Brown': ['English','Chemistry','History'],
 
     'Ms. Davis':['History','COAL'],
 
     'Mr. Wilson':['OOP','Programming Fundamentals'],
 
-    'Mrs. Anderson': ['ICT','Computer Networks'],
+    'Mrs. Anderson': ['ICT','Computer Networks','History'],
 
     'Mr. Thompson': ['OOP','Math'],
 
     'Ms. Roberts': ['Programming Fundamentals','English'],
 
-    'Mr. Clark': ['Chemistry','History'],
+    'Mr. Clark': ['Chemistry','History','COAL'],
 
     'Mrs. Moore':['Science', 'DCN']
 
@@ -420,7 +488,7 @@ time_slots = ["9:00 AM - 10:00 AM", "10:00 AM - 11:00 AM", "11:00 AM - 12:00 PM"
 timetable_generator = TimetableGenerator(subjects, teachers, max_lectures_per_day, teacherSubjectsTaught, rooms, days, time_slots)
 
 class_timetable, teacher_timetable = timetable_generator.generate_timetable()
-
+# timetable_generator.substitution(teacher_timetable)
 # ti/metable_generator.print_semesterwise_timetable(class_timetable)
 # 
 # timetable_generator.print_teacher_timetable(teacher_timetable) 

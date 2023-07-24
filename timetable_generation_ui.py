@@ -245,6 +245,8 @@ def ExtraClassComponent():
   )
     )
   
+  
+  
 
 @component
 def ShowTimeTable(state):
@@ -296,8 +298,31 @@ def ShowTimeTable(state):
         ExtraClassComponent()
         
         )
+    if state == 'AssignSubstitute':
+      return html.div(
+        AssignSubstituteComponent()
+      )
+      
  
-       
+@component
+def AssignSubstituteComponent():
+  global tt_generator
+  global teacher_tt
+  list = tt_generator.substitution(teacher_tt)
+  tr_elements = []
+  # print(list)
+  if not list:
+    return html.div(
+      'Could not add fixture'
+    )
+  for items in list:
+    tr_elements.append(html.tr(f'{items[0]} is teaching {items[1]} in place of {items[2]}'))
+  return html.table(
+    html.caption(
+    'Successfully added a fixture for absent teachers'
+    ),
+    *tr_elements
+  )
 
 @component
 def UserInteraction():
@@ -310,7 +335,9 @@ def UserInteraction():
    html.button({"on_click":handleSubmit, "value":'Teacher'},'Are you a teacher') ,
    html.button({"on_click":handleSubmit, "value":'GenerateTT'},'Generate new timetable') ,
    html.button({"on_click":handleSubmit, "value":'AddAttendance'},"Add teacher's attendance record") ,
-   html.button({"on_click":handleSubmit, "value":'AddExtraClass'},"Add extra class") 
+   html.button({"on_click":handleSubmit, "value":'AddExtraClass'},"Add extra class") ,
+   html.button({"on_click":handleSubmit, "value":'AssignSubstitute'},"Assign Substitute") 
+   
    
    ]
   if state: 
